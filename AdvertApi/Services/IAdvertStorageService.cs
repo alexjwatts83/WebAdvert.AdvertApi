@@ -9,5 +9,6 @@ namespace AdvertApi.Services
         Task<string> Add(AdvertModel model);
         Task Confirm(ConfirmAdvertModel model);
         Task<AdvertModel> Get(Guid id);
+        Task<bool> CheckHealthAsync();
     }
 }
