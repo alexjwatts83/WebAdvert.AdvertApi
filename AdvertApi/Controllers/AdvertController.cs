@@ -11,6 +11,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Cors;
+using Amazon.SimpleNotificationService;
+using AdvertApi.Models.Messages;
 
 namespace AdvertApi.Controllers
 {
@@ -67,6 +69,7 @@ namespace AdvertApi.Controllers
             try
             {
                 await _advertStorageService.ConfirmAsync(model);
+                await RaiseAdvertConfirmedMessage(model);
             }
             catch (KeyNotFoundException)
             {
@@ -78,6 +81,24 @@ namespace AdvertApi.Controllers
             }
 
             return new OkResult();
+        }
+
+        private async Task RaiseAdvertConfirmedMessage(ConfirmAdvertModel model)
+        {
+            var topicArn = Configuration.GetValue<string>("TopicArn");
+            var dbModel = await _advertStorageService.GetByIdAsync(model.Id);
+
+            using (var client = new AmazonSimpleNotificationServiceClient())
+            {
+                var message = new AdvertConfirmedMessage
+                {
+                    Id = model.Id,
+                    Title = dbModel.Title
+                };
+
+                var messageJson = JsonConvert.SerializeObject(message);
+                await client.PublishAsync(topicArn, messageJson);
+            }
         }
 
         [HttpGet]
@@ -106,6 +127,29 @@ namespace AdvertApi.Controllers
         public async Task<string> GetTest()
         {
             return await Task.FromResult("Hello World");
+        }
+
+        [HttpGet]
+        [Route("topics")]
+        public async Task<IActionResult> ListTopics()
+        {
+            try
+            {
+                using (var client = new AmazonSimpleNotificationServiceClient())
+                {
+                    var topics = await client.ListTopicsAsync();
+                    var list = topics.Topics;
+                    return new JsonResult(list);
+                }
+            }
+            catch (KeyNotFoundException)
+            {
+                return new NotFoundResult();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
         }
 
         [HttpGet]
