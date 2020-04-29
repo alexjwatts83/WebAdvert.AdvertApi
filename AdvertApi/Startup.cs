@@ -12,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Swashbuckle.AspNetCore.Swagger;
 
 namespace AdvertApi
 {
@@ -37,6 +38,23 @@ namespace AdvertApi
             {
                 options.AddPolicy("AllOrigin", policy => policy.WithOrigins("*").AllowAnyHeader());
             });
+
+            services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc(
+                    "v1",
+                    new Microsoft.OpenApi.Models.OpenApiInfo()
+                    {
+                        Title = "Alex Watts Web Advertisement Apis",
+                        Version = "version 1",
+                        Contact = new Microsoft.OpenApi.Models.OpenApiContact()
+                        {
+                            Email = "lols@lols.com",
+                            Name = "Alex Watts"
+                        }
+                    }
+                );
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -52,6 +70,12 @@ namespace AdvertApi
             app.UseAuthorization();
 
             app.UseHealthChecks("/health");
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Web Advert Api");
+            });
 
             app.UseEndpoints(endpoints =>
             {
