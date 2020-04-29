@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AdvertApi.Models;
 using Amazon.DynamoDBv2;
@@ -16,17 +17,19 @@ namespace AdvertApi.Services
             _mapper = mapper;
         }
 
-        public async Task<string> Add(AdvertModel model)
+        public async Task<string> AddAsync(AdvertModel model)
         {
             var dbModel = _mapper.Map<AdvertDbModel>(model);
 
-            dbModel.Id = new Guid().ToString();
-            dbModel.CreateDateTime = DateTime.UtcNow;
+            dbModel.Id = Guid.NewGuid().ToString();
+            dbModel.CreationDateTime = DateTime.UtcNow;
             dbModel.Status = AdvertStatus.Pending;
 
             using (var client = new AmazonDynamoDBClient())
             {
-                using(var context = new DynamoDBContext(client))
+                var table = await client.DescribeTableAsync("Adverts");
+
+                using (var context = new DynamoDBContext(client))
                 {
                     await context.SaveAsync(dbModel);
                 }
@@ -45,49 +48,53 @@ namespace AdvertApi.Services
             }
         }
 
-        public async Task Confirm(ConfirmAdvertModel model)
+        public async Task ConfirmAsync(ConfirmAdvertModel model)
         {
             using (var client = new AmazonDynamoDBClient())
             {
                 using (var context = new DynamoDBContext(client))
                 {
-                    var dbRecord = await context.LoadAsync<AdvertDbModel>(model.Id);
-                    if (dbRecord == null)
-                    {
-                        var msg = $"A record with ID of '{model.Id}' was not found";
-                        throw new KeyNotFoundException(msg);
-                    }
-
+                    var record = await context.LoadAsync<AdvertDbModel>(model.Id);
+                    if (record == null) throw new KeyNotFoundException($"A record with ID={model.Id} was not found.");
                     if (model.Status == AdvertStatus.Active)
                     {
-                        dbRecord.Status = AdvertStatus.Active;
-                        await context.SaveAsync(dbRecord);
-                    } 
+                        record.FilePath = model.FilePath;
+                        record.Status = AdvertStatus.Active;
+                        await context.SaveAsync(record);
+                    }
                     else
                     {
-                        await context.DeleteAsync(dbRecord);
+                        await context.DeleteAsync(record);
                     }
                 }
             }
         }
 
-        public async Task<AdvertModel> Get(Guid id)
+        public async Task<AdvertModel> GetByIdAsync(string id)
         {
-            AdvertModel dbModel;
             using (var client = new AmazonDynamoDBClient())
             {
                 using (var context = new DynamoDBContext(client))
                 {
-                    var dbRecord = await context.LoadAsync<AdvertDbModel>(id);
-                    if (dbRecord == null)
-                    {
-                        var msg = $"A record with ID of '{id}' was not found";
-                        throw new KeyNotFoundException(msg);
-                    }
-                    dbModel = _mapper.Map<AdvertModel>(dbRecord);
+                    var dbModel = await context.LoadAsync<AdvertDbModel>(id);
+                    if (dbModel != null) return _mapper.Map<AdvertModel>(dbModel);
                 }
             }
-            return dbModel;
+
+            throw new KeyNotFoundException();
+        }
+
+        public async Task<List<AdvertModel>> GetAllAsync()
+        {
+            using (var client = new AmazonDynamoDBClient())
+            {
+                using (var context = new DynamoDBContext(client))
+                {
+                    var scanResult =
+                        await context.ScanAsync<AdvertDbModel>(new List<ScanCondition>()).GetNextSetAsync();
+                    return scanResult.Select(item => _mapper.Map<AdvertModel>(item)).ToList();
+                }
+            }
         }
     }
 }

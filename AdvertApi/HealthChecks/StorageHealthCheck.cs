@@ -15,6 +15,7 @@ namespace AdvertApi.HealthChecks
         {
             _storageService = storageService;
         }
+
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
             var isStorageOk = await _storageService.CheckHealthAsync();

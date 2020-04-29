@@ -20,9 +20,15 @@ namespace AdvertApi.Services
         public double Price { get; set; }
 
         [DynamoDBProperty]
-        public DateTime CreateDateTime { get; set; }
+        public DateTime CreationDateTime { get; set; }
 
         [DynamoDBProperty]
         public AdvertStatus Status { get; set; }
+
+        [DynamoDBProperty]
+        public string FilePath { get; set; }
+
+        [DynamoDBProperty]
+        public string UserName { get; set; }
     }
 }

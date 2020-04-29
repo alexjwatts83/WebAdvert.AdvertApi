@@ -4,24 +4,33 @@ using System.Linq;
 using System.Threading.Tasks;
 using AdvertApi.Models;
 using AdvertApi.Services;
+//using AutoMapper.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
+using Microsoft.AspNetCore.Cors;
 
 namespace AdvertApi.Controllers
 {
     [ApiController]
     [Route("api/v1/adverts")]
+    [Produces("application/json")]
     public class AdvertController : ControllerBase
     {
         private readonly ILogger<AdvertController> _logger;
         private readonly IAdvertStorageService _advertStorageService;
+        public IConfiguration Configuration { get; }
 
-        public AdvertController(ILogger<AdvertController> logger,
-            IAdvertStorageService advertStorageService)
+        public AdvertController(
+            ILogger<AdvertController> logger,
+            IAdvertStorageService advertStorageService, 
+            IConfiguration configuration)
         {
             _logger = logger;
             _advertStorageService = advertStorageService;
+            Configuration = configuration;
         }
 
         [HttpPost]
@@ -31,10 +40,10 @@ namespace AdvertApi.Controllers
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(CreateAdvertResponse))]
         public async Task<IActionResult> Create(AdvertModel model)
         {
-            string recordId = string.Empty;
+            string recordId;
             try
             {
-                recordId = await _advertStorageService.Add(model);
+                recordId = await _advertStorageService.AddAsync(model);
             }
             catch (KeyNotFoundException)
             {
@@ -57,7 +66,7 @@ namespace AdvertApi.Controllers
         {
             try
             {
-                await _advertStorageService.Confirm(model);
+                await _advertStorageService.ConfirmAsync(model);
             }
             catch (KeyNotFoundException)
             {
@@ -73,14 +82,22 @@ namespace AdvertApi.Controllers
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<AdvertModel> Get(Guid id)
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> Get(string id)
         {
             try
             {
-                return await _advertStorageService.Get(id);
-            } catch (Exception)
+                var advert = await _advertStorageService.GetByIdAsync(id);
+                return new JsonResult(advert);
+            }
+            catch (KeyNotFoundException)
             {
-                return await Task.FromResult(new AdvertModel());
+                return new NotFoundResult();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
         }
 
@@ -89,6 +106,15 @@ namespace AdvertApi.Controllers
         public async Task<string> GetTest()
         {
             return await Task.FromResult("Hello World");
+        }
+
+        [HttpGet]
+        [Route("all")]
+        [ProducesResponseType(200)]
+        [EnableCors("AllOrigin")]
+        public async Task<IActionResult> All()
+        {
+            return new JsonResult(await _advertStorageService.GetAllAsync());
         }
     }
 }
