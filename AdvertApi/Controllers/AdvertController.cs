@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Cors;
 using Amazon.SimpleNotificationService;
 using AdvertApi.Models.Messages;
+using Amazon.SimpleNotificationService.Model;
 
 namespace AdvertApi.Controllers
 {
@@ -150,6 +151,90 @@ namespace AdvertApi.Controllers
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
+        }
+
+        [HttpGet]
+        [Route("raise/{id}/{title}")]
+        public async Task<IActionResult> Raise(string id, string title)
+        {
+            try
+            {
+                var topicArn = Configuration.GetValue<string>("TopicArn");
+
+                using (var client = new AmazonSimpleNotificationServiceClient())
+                {
+                    var message = new AdvertConfirmedMessage
+                    {
+                        Id = id,
+                        Title = title
+                    };
+
+                    var messageJson = JsonConvert.SerializeObject(message);
+                    await client.PublishAsync(topicArn, messageJson);
+                }
+            }
+            catch (AuthorizationErrorException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (EndpointDisabledException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (InternalErrorException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (InvalidParameterException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (InvalidParameterValueException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (InvalidSecurityException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (KMSAccessDeniedException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (KMSDisabledException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (KMSInvalidStateException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (KMSNotFoundException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (KMSOptInRequiredException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (KMSThrottlingException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (NotFoundException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (PlatformApplicationDisabledException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+
+            return new OkResult();
         }
 
         [HttpGet]

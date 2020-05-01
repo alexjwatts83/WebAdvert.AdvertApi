@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -7,7 +7,7 @@
     <Product>Advert Api Webmodel Microservice</Product>
     <PackageProjectUrl>https://github.com/alexjwatts83/WebAdvert.AdvertApi</PackageProjectUrl>
     <RepositoryUrl>https://github.com/alexjwatts83/WebAdvert.AdvertApi</RepositoryUrl>
-    <Version>1.0.1</Version>
+    <Version>1.1.1</Version>
     <PackageId>AlexWatts.AdvertApi.Models</PackageId>
   </PropertyGroup>
 
