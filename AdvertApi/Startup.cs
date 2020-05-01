@@ -77,6 +77,8 @@ namespace AdvertApi
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Web Advert Api");
             });
 
+            app.UseCors();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
